@@ -12,9 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Setup XcodeGen
-        uses: tnakamoto/xcodegen-github-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        uses: yonaskolb/XcodeGen@master
 
       - name: Setup project
         run: |
