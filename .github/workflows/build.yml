@@ -7,16 +7,10 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Xcode 16
-        run: |
-          # Install Xcode 16
-          sudo xcode-select -s /Applications/Xcode_16.1.app || true
-          ls /Applications/ | grep -i xcode
-
       - name: Setup XcodeGen
         run: brew install xcodegen
 
