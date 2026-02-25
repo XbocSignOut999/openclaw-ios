@@ -12,29 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Setup XcodeGen
-        run: |
-          brew install xcodegen
-
-      - name: Configure signing (unsigned for Sidestore)
+      - name: Setup Xcode project
         run: |
           cd apps/ios
           
-          # Create unsigned signing config
+          # Configure signing for sidestore (no signing)
           cat > Signing.xcconfig << 'EOF'
           OPENCLAW_CODE_SIGN_STYLE = Manual
           OPENCLAW_DEVELOPMENT_TEAM = 
@@ -45,61 +30,56 @@ jobs:
           OPENCLAW_WATCH_APP_BUNDLE_ID = ai.openclaw.ios.sidestore.watch
           OPENCLAW_WATCH_EXTENSION_BUNDLE_ID = ai.openclaw.ios.sidestore.watch.extension
           EOF
-
-      - name: Generate Xcode project
-        run: |
-          cd apps/ios
+          
+          # Generate project
           xcodegen generate
 
-      - name: Build IPA (Unsigned)
+      - name: Build for iOS Simulator
         run: |
           cd apps/ios
           
-          # Resolve Swift packages first
+          # Build for simulator (resolves packages automatically)
           xcodebuild -project OpenClaw.xcodeproj \
             -scheme OpenClaw \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -resolvePackageDependencies
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            build
 
-      - name: Create unsigned IPA
+      - name: Build unsigned IPA
         run: |
           cd apps/ios
           
-          # Build for generic device
+          # Build for generic iOS device (no signing)
           xcodebuild -project OpenClaw.xcodeproj \
             -scheme OpenClaw \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath ./DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package IPA
+      - name: Create IPA
         run: |
           cd apps/ios
           
-          # Find the built app
-          APP_PATH=$(find ./DerivedData -name "OpenClaw.app" -type d | head -1)
-          echo "App path: $APP_PATH"
+          # Find built app
+          BUILD_DIR=$(xcodebuild -project OpenClaw.xcodeproj -scheme OpenClaw -configuration Release -showBuildSettings 2>/dev/null | grep BUILD_DIR | awk '{print $3}')
+          APP_PATH="$BUILD_DIR/Build/Products/Release-iphoneos/OpenClaw.app"
           
-          if [ -z "$APP_PATH" ]; then
-            echo "ERROR: No app found in DerivedData"
-            exit 1
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "OpenClaw.app" -type d 2>/dev/null | head -1)
           fi
           
-          # Create Payload directory
+          echo "Using app at: $APP_PATH"
+          
+          # Create IPA
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/OpenClaw.app
-          
-          # Create unsigned IPA
           cd Payload
-          zip -qr ../OpenClaw.unsigned.ipa *
+          zip -qr ../OpenClaw.unsigned.ipa OpenClaw.app
           cd ..
           
-          echo "IPA created: OpenClaw.unsigned.ipa"
           ls -la OpenClaw.unsigned.ipa
 
       - name: Upload IPA
