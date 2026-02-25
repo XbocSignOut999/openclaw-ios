@@ -11,7 +11,7 @@ settings:
 
 packages:
   OpenClawKit:
-    path: ../shared/OpenClawKit
+    path: ../shared
   Swabble:
     path: ../../Swabble
 
