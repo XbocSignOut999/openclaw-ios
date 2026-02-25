@@ -11,18 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install XcodeGen
-        run: |
-          # Download xcodegen from releases
-          curl -sL https://github.com/yonaskolb/XcodeGen/releases/download/v0.54.1/XcodeGen.zip -o XcodeGen.zip
-          unzip -o XcodeGen.zip
-          ls -la
+      - name: Setup XcodeGen
+        uses: tnakamoto/xcodegen-github-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup project
         run: |
           cd apps/ios
           cp LocalSigning.xcconfig.example LocalSigning.xcconfig
-          ../XcodeGen/bin/xcodegen generate
+          xcodegen generate
 
       - name: Build for Simulator
         run: |
