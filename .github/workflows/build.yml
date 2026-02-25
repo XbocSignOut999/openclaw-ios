@@ -7,14 +7,14 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup XcodeGen
         run: |
-          # Install via Ruby (pre-installed on macOS)
-          sudo gem install xcodegen
+          # Use homebrew to install xcodegen  
+          brew install xcodegen
 
       - name: Setup project
         run: |
