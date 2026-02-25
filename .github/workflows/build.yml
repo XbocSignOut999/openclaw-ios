@@ -18,28 +18,14 @@ jobs:
         run: |
           cd apps/ios
           
-          # Copy local signing example to make xcodegen happy
+          # Copy local signing example
           cp LocalSigning.xcconfig.example LocalSigning.xcconfig
           
-          # Also create Signing.xcconfig if needed
-          if [ ! -f Signing.xcconfig ]; then
-            cat > Signing.xcconfig << 'EOF'
-            OPENCLAW_CODE_SIGN_STYLE = Manual
-            OPENCLAW_DEVELOPMENT_TEAM = 
-            OPENCLAW_APP_BUNDLE_ID = ai.openclaw.ios.sidestore
-            OPENCLAW_APP_PROFILE = 
-            OPENCLAW_SHARE_BUNDLE_ID = ai.openclaw.ios.sidestore.share
-            OPENCLAW_SHARE_PROFILE = 
-            OPENCLAW_WATCH_APP_BUNDLE_ID = ai.openclaw.ios.sidestore.watch
-            OPENCLAW_WATCH_EXTENSION_BUNDLE_ID = ai.openclaw.ios.sidestore.watch.extension
-            EOF
-          fi
+          # List files
+          ls -la
           
-          # Verify required files exist
-          ls -la *.xcconfig
-          
-          # Generate Xcode project with verbose
-          xcodegen generate --use-cache
+          # Generate Xcode project - show all output
+          xcodegen generate 2>&1
 
       - name: Build for Simulator
         run: |
@@ -48,7 +34,7 @@ jobs:
             -scheme OpenClaw \
             -configuration Debug \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
-            build
+            build 2>&1 | tail -50
 
       - name: Build for Device (unsigned)
         run: |
@@ -60,11 +46,10 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tail -100
 
       - name: Create IPA
         run: |
-          # Find built app
           APP=$(find ~/Library/Developer/Xcode/DerivedData -name "OpenClaw.app" -type d | head -1)
           echo "Found app: $APP"
           
